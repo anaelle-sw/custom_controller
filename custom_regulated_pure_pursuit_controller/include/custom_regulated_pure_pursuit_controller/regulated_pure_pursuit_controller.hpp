@@ -143,11 +143,11 @@ protected:
   rclcpp::Logger logger_ {rclcpp::get_logger("RegulatedPurePursuitController")};
   rclcpp::Clock::SharedPtr clock_;
 
+  // Parameters
   double desired_linear_vel_, base_desired_linear_vel_;
   double lookahead_dist_;
   tf2::Duration transform_tolerance_;
   double max_allowed_time_to_collision_;
-  double max_angular_accel_;
   double max_angular_vel_;
 
   nav_msgs::msg::Path global_plan_;
