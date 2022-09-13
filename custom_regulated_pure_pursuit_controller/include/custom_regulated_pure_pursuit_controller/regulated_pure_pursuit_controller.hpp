@@ -115,48 +115,6 @@ protected:
     geometry_msgs::msg::PoseStamped & out_pose) const;
 
   /**
-   * @brief Get lookahead distance
-   * @param cmd the current speed to use to compute lookahead point
-   * @return lookahead distance
-   */
-  double getLookAheadDistance(const geometry_msgs::msg::Twist &);
-
-  /**
-   * @brief Creates a PointStamped message for visualization
-   * @param carrot_pose Input carrot point as a PoseStamped
-   * @return CarrotMsg a carrot point marker, PointStamped
-   */
-  std::unique_ptr<geometry_msgs::msg::PointStamped> createCarrotMsg(
-    const geometry_msgs::msg::PoseStamped & carrot_pose);
-
-  /**
-   * @brief Whether robot should rotate to rough path heading
-   * @param carrot_pose current lookahead point
-   * @param angle_to_path Angle of robot output relatie to carrot marker
-   * @return Whether should rotate to path heading
-   */
-  bool shouldRotateToPath(
-    const geometry_msgs::msg::PoseStamped & carrot_pose, double & angle_to_path);
-
-  /**
-   * @brief Whether robot should rotate to final goal orientation
-   * @param carrot_pose current lookahead point
-   * @return Whether should rotate to goal heading
-   */
-  bool shouldRotateToGoalHeading(const geometry_msgs::msg::PoseStamped & carrot_pose);
-
-  /**
-   * @brief Create a smooth and kinematically smoothed rotation command
-   * @param linear_vel linear velocity
-   * @param angular_vel angular velocity
-   * @param angle_to_path Angle of robot output relatie to carrot marker
-   * @param curr_speed the current robot speed
-   */
-  void rotateToHeading(
-    double & linear_vel, double & angular_vel,
-    const double & angle_to_path, const geometry_msgs::msg::Twist & curr_speed);
-
-  /**
    * @brief Whether collision is imminent
    * @param robot_pose Pose of robot
    * @param carrot_pose Pose of carrot
@@ -177,42 +135,6 @@ protected:
    */
   bool inCollision(const double & x, const double & y);
 
-  /**
-   * @brief Cost at a point
-   * @param x Pose of pose x
-   * @param y Pose of pose y
-   * @return Cost of pose in costmap
-   */
-  double costAtPose(const double & x, const double & y);
-
-  /**
-   * @brief apply regulation constraints to the system
-   * @param linear_vel robot command linear velocity input
-   * @param dist_error error in the carrot distance and lookahead distance
-   * @param lookahead_dist optimal lookahead distance
-   * @param curvature curvature of path
-   * @param speed Speed of robot
-   * @param pose_cost cost at this pose
-   */
-  void applyConstraints(
-    const double & dist_error, const double & lookahead_dist,
-    const double & curvature, const geometry_msgs::msg::Twist & speed,
-    const double & pose_cost, double & linear_vel, double & sign);
-
-  /**
-   * @brief Get lookahead point
-   * @param lookahead_dist Optimal lookahead distance
-   * @param path Current global path
-   * @return Lookahead point
-   */
-  geometry_msgs::msg::PoseStamped getLookAheadPoint(const double &, const nav_msgs::msg::Path &);
-
-  /**
-   * @brief checks for the cusp position
-   * @param pose Pose input to determine the cusp position
-   * @return robot distance from the cusp
-   */
-  double findDirectionChange(const geometry_msgs::msg::PoseStamped & pose);
 
   std::shared_ptr<tf2_ros::Buffer> tf_;
   std::string plugin_name_;
@@ -223,34 +145,13 @@ protected:
 
   double desired_linear_vel_, base_desired_linear_vel_;
   double lookahead_dist_;
-  double rotate_to_heading_angular_vel_;
-  double max_lookahead_dist_;
-  double min_lookahead_dist_;
-  double lookahead_time_;
-  bool use_velocity_scaled_lookahead_dist_;
   tf2::Duration transform_tolerance_;
-  bool use_approach_vel_scaling_;
-  double min_approach_linear_velocity_;
-  double control_duration_;
   double max_allowed_time_to_collision_;
-  bool use_regulated_linear_velocity_scaling_;
-  bool use_cost_regulated_linear_velocity_scaling_;
-  double cost_scaling_dist_;
-  double cost_scaling_gain_;
-  double inflation_cost_scaling_factor_;
-  double regulated_linear_scaling_min_radius_;
-  double regulated_linear_scaling_min_speed_;
-  bool use_rotate_to_heading_;
   double max_angular_accel_;
-  double rotate_to_heading_min_angle_;
-  double goal_dist_tol_;
-  bool allow_reversing_;
+  double max_angular_vel_;
 
   nav_msgs::msg::Path global_plan_;
   std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Path>> global_path_pub_;
-  std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<geometry_msgs::msg::PointStamped>>
-  carrot_pub_;
-  std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Path>> carrot_arc_pub_;
 };
 
 }  // namespace custom_regulated_pure_pursuit_controller
