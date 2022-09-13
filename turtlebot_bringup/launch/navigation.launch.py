@@ -31,6 +31,7 @@ def generate_launch_description():
     autostart = LaunchConfiguration('autostart')
     params_file = LaunchConfiguration('params_file')
     custom_controller_params_file = LaunchConfiguration('custom_controller_params_file')
+    default_nav_to_pose_bt_xml = LaunchConfiguration('default_nav_to_pose_bt_xml')
 
     lifecycle_nodes = ['controller_server',
                        'planner_server',
@@ -84,6 +85,12 @@ def generate_launch_description():
             default_value=os.path.join(bringup_dir, 'params', 'custom_controller_params.yaml'),
             description='Full path to the ROS2 parameters file to use for the custom controller'),
 
+        DeclareLaunchArgument(
+            'default_nav_to_pose_bt_xml',
+            default_value=
+            os.path.join(bringup_dir, 'behavior_trees', 'simple_navigate_to_pose.xml'),
+            description='Full path to the Nav2 Bt for navigating to pose'),
+
         Node(
             package='nav2_controller',
             executable='controller_server',
@@ -112,7 +119,9 @@ def generate_launch_description():
             executable='bt_navigator',
             name='bt_navigator',
             output='screen',
-            parameters=[configured_params],
+            parameters=[
+            configured_params,
+            {'default_nav_to_pose_bt_xml': default_nav_to_pose_bt_xml}],
             remappings=remappings),
 
         Node(

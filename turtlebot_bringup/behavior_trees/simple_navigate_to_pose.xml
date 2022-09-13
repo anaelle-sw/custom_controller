@@ -1,0 +1,12 @@
+<!--
+  This Behavior Tree plans the global path and controls the robot to follow the path.
+  No replanning or recovery implemented.
+-->
+<root main_tree_to_execute="MainTree">
+  <BehaviorTree ID="MainTree">
+    <PipelineSequence name="Navigate">
+      <ComputePathToPose goal="{goal}" path="{path}" planner_id="GridBased"/>
+      <FollowPath path="{path}" controller_id="FollowPath"/>
+    </PipelineSequence>
+  </BehaviorTree>
+</root>
