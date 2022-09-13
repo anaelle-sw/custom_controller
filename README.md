@@ -8,7 +8,7 @@ A custom controller for nav2 and turtlebot3, based on nav2's regulated pure purs
 * Install Colcon: `sudo apt install python3-colcon-common-extensions`
 
 ## Install project
-* Git clone this project: `git clone https://github.com/anaelle-sw/custom_controller.git custom_controller_ws`
+* Git clone this project: `git clone https://github.com/anaelle-sw/custom_controller.git custom_controller_ws/src`
 * Build this project:
 ```
 cd custom_controller_ws

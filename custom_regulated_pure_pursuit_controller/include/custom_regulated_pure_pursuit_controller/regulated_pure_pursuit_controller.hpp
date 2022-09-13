@@ -30,7 +30,7 @@ public:
   RegulatedPurePursuitController() = default;
 
   /**
-   * @brief Destrructor for custom_regulated_pure_pursuit_controller::RegulatedPurePursuitController
+   * @brief Destructor for custom_regulated_pure_pursuit_controller::RegulatedPurePursuitController
    */
   ~RegulatedPurePursuitController() override = default;
 
@@ -42,9 +42,10 @@ public:
    * @param costmap_ros Costmap2DROS object of environment
    */
   void configure(
-    const rclcpp_lifecycle::LifecycleNode::WeakPtr & parent,
-    std::string name, const std::shared_ptr<tf2_ros::Buffer> & tf,
-    const std::shared_ptr<nav2_costmap_2d::Costmap2DROS> & costmap_ros) override;
+      const rclcpp_lifecycle::LifecycleNode::WeakPtr & parent,
+      std::string name,
+      const std::shared_ptr<tf2_ros::Buffer> & tf,
+      const std::shared_ptr<nav2_costmap_2d::Costmap2DROS> & costmap_ros) override;
 
   /**
    * @brief Cleanup controller state machine
