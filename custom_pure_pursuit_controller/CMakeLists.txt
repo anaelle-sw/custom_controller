@@ -6,7 +6,9 @@ find_package(nav2_common REQUIRED)
 find_package(nav2_core REQUIRED)
 find_package(nav2_costmap_2d REQUIRED)
 find_package(nav2_util REQUIRED)
+find_package(nav_2d_utils REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_lifecycle REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(pluginlib REQUIRED)
@@ -21,27 +23,47 @@ include_directories(
 )
 
 set(dependencies
-  rclcpp
-  geometry_msgs
-  nav2_costmap_2d
-  pluginlib
-  nav_msgs
-  nav2_util
-  nav2_core
-  tf2
-  tf2_geometry_msgs
+    rclcpp
+    rclcpp_lifecycle
+    geometry_msgs
+    nav2_costmap_2d
+    pluginlib
+    nav_msgs
+    nav2_util
+    nav_2d_utils
+    nav2_core
+    tf2
+    tf2_geometry_msgs
 )
 
-set(library_name custom_pure_pursuit_controller)
-
-add_library(${library_name} SHARED
-        src/pure_pursuit_controller.cpp)
-
-ament_target_dependencies(${library_name}
-  ${dependencies}
+add_library(pure_pursuit_controller SHARED
+    src/pure_pursuit_controller.cpp)
+ament_target_dependencies(pure_pursuit_controller
+    rclcpp
+    geometry_msgs
+    nav2_costmap_2d
+    pluginlib
+    nav_msgs
+    nav2_util
+    nav2_core
+    tf2
+    tf2_geometry_msgs
 )
 
-install(TARGETS ${library_name}
+add_library(progress_checker SHARED
+    plugins/progress_checker.cpp)
+ament_target_dependencies(progress_checker
+    rclcpp
+    rclcpp_lifecycle
+    pluginlib
+    geometry_msgs
+    nav2_core
+    nav2_util
+    nav_2d_utils
+)
+
+
+install(TARGETS pure_pursuit_controller progress_checker
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
@@ -60,10 +82,11 @@ install(DIRECTORY include/
 #endif()
 
 ament_export_include_directories(include)
-ament_export_libraries(${library_name})
+ament_export_libraries(pure_pursuit_controller progress_checker)
 ament_export_dependencies(${dependencies})
 
 pluginlib_export_plugin_description_file(nav2_core custom_pure_pursuit_controller.xml)
+pluginlib_export_plugin_description_file(nav2_core plugins.xml)
 
 ament_package()
 

@@ -1,8 +1,8 @@
 <class_libraries>
-    <library path="custom_pure_pursuit_controller">
+    <library path="pure_pursuit_controller">
         <class type="custom_pure_pursuit_controller::PurePursuitController" base_class_type="nav2_core::Controller">
             <description>
-                pure_pursuit_controller
+                Follows a path according to the pure pursuit algorithm and stops before obstacles.
             </description>
         </class>
     </library>

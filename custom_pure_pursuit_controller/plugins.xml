@@ -1,0 +1,7 @@
+<class_libraries>
+  <library path="progress_checker">
+    <class type="custom_pure_pursuit_controller::ProgressChecker" base_class_type="nav2_core::ProgressChecker">
+      <description>Checks if distance between current and previous pose is above a threshold</description>
+    </class>
+  </library>
+</class_libraries>
