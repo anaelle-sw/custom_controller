@@ -6,8 +6,10 @@
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
 #include "nav2_core/progress_checker.hpp"
+#include "nav_msgs/msg/path.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "geometry_msgs/msg/pose2_d.hpp"
+#include "custom_msgs/msg/progress_status.hpp"
 
 namespace custom_pure_pursuit_controller
 {
@@ -39,6 +41,11 @@ protected:
    * @param pose Current pose of the robot
    */
   void reset_baseline_pose(const geometry_msgs::msg::Pose2D & pose);
+  /**
+   * @brief Callback executed when message published on "/plan" topic
+   * @param path_msg Topic's message (unused)
+   */
+  void plan_callback(const nav_msgs::msg::Path::SharedPtr path_msg);
 
   rclcpp::Clock::SharedPtr clock_;
 
@@ -50,6 +57,12 @@ protected:
 
   bool baseline_pose_set_{false};
   std::string plugin_name_;
+
+  std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<
+    custom_msgs::msg::ProgressStatus>> progress_status_pub_;
+  custom_msgs::msg::ProgressStatus progress_status_;
+  rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr plan_sub_;
+  rclcpp::Logger logger_ {rclcpp::get_logger("ProgressChecker")};
 };
 }  // namespace nav2_controller
 

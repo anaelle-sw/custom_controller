@@ -7,6 +7,7 @@
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "geometry_msgs/msg/pose2_d.hpp"
 #include "nav2_util/node_utils.hpp"
+#include "nav_msgs/msg/path.hpp"
 #include "pluginlib/class_list_macros.hpp"
 
 using rcl_interfaces::msg::ParameterType;
@@ -23,6 +24,8 @@ void ProgressChecker::initialize(
   plugin_name_ = plugin_name;
   auto node = parent.lock();
 
+  logger_ = node->get_logger();
+
   clock_ = node->get_clock();
 
   nav2_util::declare_parameter_if_not_declared(
@@ -34,7 +37,16 @@ void ProgressChecker::initialize(
   double time_allowance_param = 0.0;
   node->get_parameter_or(plugin_name + ".movement_time_allowance", time_allowance_param, 10.0);
   time_allowance_ = rclcpp::Duration::from_seconds(time_allowance_param);
-}
+
+  progress_status_pub_ =
+      node->create_publisher<custom_msgs::msg::ProgressStatus>(
+        "/follow_path/progress_status", rclcpp::QoS(1).transient_local());
+  progress_status_pub_->on_activate();
+  progress_status_.status = custom_msgs::msg::ProgressStatus::UNKNOWNED;
+
+  plan_sub_ = node->create_subscription<nav_msgs::msg::Path>(
+        "/plan", 1, std::bind(&ProgressChecker::plan_callback, this, _1));
+ }
 
 bool ProgressChecker::check(geometry_msgs::msg::PoseStamped & current_pose)
 {
@@ -45,9 +57,30 @@ bool ProgressChecker::check(geometry_msgs::msg::PoseStamped & current_pose)
 
   if ((!baseline_pose_set_) || (is_robot_moved_enough(current_pose2d))) {
     reset_baseline_pose(current_pose2d);
+
+    // Publish progress status on change only (transient local topic)
+    if (progress_status_.status != custom_msgs::msg::ProgressStatus::ROBOT_PROGRESSING) {
+      progress_status_.status = custom_msgs::msg::ProgressStatus::ROBOT_PROGRESSING;
+      progress_status_pub_->publish(progress_status_);
+    }
     return true;
   }
-  return !((clock_->now() - baseline_time_) > time_allowance_);
+
+  if (!((clock_->now() - baseline_time_) > time_allowance_)) {
+    // Publish progress status on change only (transient local topic)
+    if (progress_status_.status !=  custom_msgs::msg::ProgressStatus::ROBOT_PROGRESSING) {
+      progress_status_.status = custom_msgs::msg::ProgressStatus::ROBOT_PROGRESSING;
+      progress_status_pub_->publish(progress_status_);
+    }
+    return true;
+  }
+
+  // Publish progress status on change only (transient local topic)
+  if (progress_status_.status != custom_msgs::msg::ProgressStatus::ROBOT_STUCK) {
+    progress_status_.status = custom_msgs::msg::ProgressStatus::ROBOT_STUCK;
+    progress_status_pub_->publish(progress_status_);
+  }
+  return false;
 }
 
 void ProgressChecker::reset()
@@ -60,6 +93,13 @@ void ProgressChecker::reset_baseline_pose(const geometry_msgs::msg::Pose2D & pos
   baseline_pose_ = pose;
   baseline_time_ = clock_->now();
   baseline_pose_set_ = true;
+}
+
+void ProgressChecker::plan_callback(const nav_msgs::msg::Path::SharedPtr /*path_msg*/)
+{
+  progress_status_.status = custom_msgs::msg::ProgressStatus::FOLLOWING_NEW_PATH;
+  progress_status_pub_->publish(progress_status_);
+  return;
 }
 
 bool ProgressChecker::is_robot_moved_enough(const geometry_msgs::msg::Pose2D & pose)

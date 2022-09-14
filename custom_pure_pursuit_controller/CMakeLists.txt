@@ -14,6 +14,7 @@ find_package(nav_msgs REQUIRED)
 find_package(pluginlib REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
+find_package(custom_msgs REQUIRED)
 
 nav2_package()
 set(CMAKE_CXX_STANDARD 17)
@@ -60,6 +61,8 @@ ament_target_dependencies(progress_checker
     nav2_core
     nav2_util
     nav_2d_utils
+    nav_msgs
+    custom_msgs
 )
 
 
