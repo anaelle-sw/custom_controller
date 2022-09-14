@@ -33,8 +33,18 @@ source ~/custom_controller_ws/install/local_setup.bash
 * Launch project: `ros2 launch turtlebot_bringup simulation_bringup.launch.py`
 
 ## Use the custom controller
-* Using Rviz's plugin "2D Pose Estimate", localize the robot approximately here:  
+* Using Rviz's plugin "2D Pose Estimate", localize the robot approximately here: 
+![position](https://user-images.githubusercontent.com/63144493/190177552-806f3109-d79c-4124-b301-745983b6dfa9.png)
+
 * The robot should now be localized and the local and global costmap should be displayed:
+![localized](https://user-images.githubusercontent.com/63144493/190177718-71039711-e753-47da-b7fa-b3ee19545a89.png)
+
 * Usign Rviz's plugin "Nav2 Goal", send the robot anywhere in the map:
+![nav](https://user-images.githubusercontent.com/63144493/190177922-22e46148-2437-425e-b66a-0c620ccd2f85.png)
+
 * The robot should follow the diplayed global path, usign the custom controller:
-* You can test the collision detection by generating a box via Gazebo. The box must be paced on the global path, while the robot is moving: 
+![follow_path](https://user-images.githubusercontent.com/63144493/190178000-070c8441-cd6a-44a8-923a-529c968f369a.png)
+
+* You can test the collision detection by generating a box via Gazebo. The box must be placed on the global path, while the robot is still moving: 
+![obstacle](https://user-images.githubusercontent.com/63144493/190178833-0dcae3eb-9fe6-4d8e-ab0d-63b5cdf6b667.png)
+
