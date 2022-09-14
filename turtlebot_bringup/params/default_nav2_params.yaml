@@ -125,9 +125,9 @@ controller_server:
       xy_goal_tolerance: 0.25
       yaw_goal_tolerance: 0.25
 
-    # RegulatedPurePursuitController parameters
+    # PurePursuitController parameters
     FollowPath:
-      plugin: "custom_regulated_pure_pursuit_controller::RegulatedPurePursuitController"
+      plugin: "custom_pure_pursuit_controller::PurePursuitController"
       desired_linear_vel: 0.5
       lookahead_dist: 1.0
       transform_tolerance: 0.2

@@ -1,5 +1,5 @@
-#ifndef REGULATED_PURE_PURSUIT_CONTROLLER__REGULATED_PURE_PURSUIT_CONTROLLER_HPP_
-#define REGULATED_PURE_PURSUIT_CONTROLLER__REGULATED_PURE_PURSUIT_CONTROLLER_HPP_
+#ifndef PURE_PURSUIT_CONTROLLER_HPP_
+#define PURE_PURSUIT_CONTROLLER_HPP_
 
 #include <string>
 #include <vector>
@@ -14,25 +14,25 @@
 #include "nav2_util/geometry_utils.hpp"
 #include "geometry_msgs/msg/pose2_d.hpp"
 
-namespace custom_regulated_pure_pursuit_controller
+namespace custom_pure_pursuit_controller
 {
 
 /**
- * @class custom_regulated_pure_pursuit_controller::RegulatedPurePursuitController
- * @brief Regulated pure pursuit controller plugin
+ * @class custom_pure_pursuit_controller::PurePursuitController
+ * @brief Pure pursuit controller plugin
  */
-class RegulatedPurePursuitController : public nav2_core::Controller
+class PurePursuitController : public nav2_core::Controller
 {
 public:
   /**
-   * @brief Constructor for custom_regulated_pure_pursuit_controller::RegulatedPurePursuitController
+   * @brief Constructor for custom_pure_pursuit_controller::PurePursuitController
    */
-  RegulatedPurePursuitController() = default;
+  PurePursuitController() = default;
 
   /**
-   * @brief Destructor for custom_regulated_pure_pursuit_controller::RegulatedPurePursuitController
+   * @brief Destructor for custom_pure_pursuit_controller::PurePursuitController
    */
-  ~RegulatedPurePursuitController() override = default;
+  ~PurePursuitController() override = default;
 
   /**
    * @brief Configure controller state machine
@@ -140,7 +140,7 @@ protected:
   std::string plugin_name_;
   std::shared_ptr<nav2_costmap_2d::Costmap2DROS> costmap_ros_;
   nav2_costmap_2d::Costmap2D * costmap_;
-  rclcpp::Logger logger_ {rclcpp::get_logger("RegulatedPurePursuitController")};
+  rclcpp::Logger logger_ {rclcpp::get_logger("PurePursuitController")};
   rclcpp::Clock::SharedPtr clock_;
 
   // Parameters
@@ -154,6 +154,6 @@ protected:
   std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Path>> global_path_pub_;
 };
 
-}  // namespace custom_regulated_pure_pursuit_controller
+}  // namespace custom_pure_pursuit_controller
 
-#endif  // REGULATED_PURE_PURSUIT_CONTROLLER__REGULATED_PURE_PURSUIT_CONTROLLER_HPP_
+#endif  // PURE_PURSUIT_CONTROLLER_HPP_

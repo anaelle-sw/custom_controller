@@ -4,7 +4,7 @@
 #include <memory>
 #include <utility>
 
-#include "custom_regulated_pure_pursuit_controller/regulated_pure_pursuit_controller.hpp"
+#include "custom_pure_pursuit_controller/pure_pursuit_controller.hpp"
 #include "nav2_core/exceptions.hpp"
 #include "nav2_util/node_utils.hpp"
 #include "nav2_util/geometry_utils.hpp"
@@ -18,10 +18,10 @@ using nav2_util::declare_parameter_if_not_declared;
 using nav2_util::geometry_utils::euclidean_distance;
 using namespace nav2_costmap_2d;  // NOLINT
 
-namespace custom_regulated_pure_pursuit_controller
+namespace custom_pure_pursuit_controller
 {
 
-void RegulatedPurePursuitController::configure(
+void PurePursuitController::configure(
   const rclcpp_lifecycle::LifecycleNode::WeakPtr & parent,
   std::string name, const std::shared_ptr<tf2_ros::Buffer> & tf,
   const std::shared_ptr<nav2_costmap_2d::Costmap2DROS> & costmap_ros)
@@ -65,37 +65,37 @@ void RegulatedPurePursuitController::configure(
   global_path_pub_ = node->create_publisher<nav_msgs::msg::Path>("received_global_plan", 1);
 }
 
-void RegulatedPurePursuitController::cleanup()
+void PurePursuitController::cleanup()
 {
   RCLCPP_INFO(
     logger_,
-    "Cleaning up controller: %s of type"
-    " regulated_pure_pursuit_controller::RegulatedPurePursuitController",
+    "Cleaning up controller: %s of type "
+    "custom_pure_pursuit_controller::PurePursuitController",
     plugin_name_.c_str());
   global_path_pub_.reset();
 }
 
-void RegulatedPurePursuitController::activate()
+void PurePursuitController::activate()
 {
   RCLCPP_INFO(
     logger_,
     "Activating controller: %s of type "
-    "regulated_pure_pursuit_controller::RegulatedPurePursuitController",
+    "custom_pure_pursuit_controller::PurePursuitController",
     plugin_name_.c_str());
   global_path_pub_->on_activate();
 }
 
-void RegulatedPurePursuitController::deactivate()
+void PurePursuitController::deactivate()
 {
   RCLCPP_INFO(
     logger_,
     "Deactivating controller: %s of type "
-    "regulated_pure_pursuit_controller::RegulatedPurePursuitController",
+    "custom_pure_pursuit_controller::PurePursuitController",
     plugin_name_.c_str());
   global_path_pub_->on_deactivate();
 }
 
-geometry_msgs::msg::TwistStamped RegulatedPurePursuitController::computeVelocityCommands(
+geometry_msgs::msg::TwistStamped PurePursuitController::computeVelocityCommands(
   const geometry_msgs::msg::PoseStamped & pose,
   const geometry_msgs::msg::Twist & /*speed*/,
   nav2_core::GoalChecker * /*goal_checker*/)
@@ -131,7 +131,7 @@ geometry_msgs::msg::TwistStamped RegulatedPurePursuitController::computeVelocity
 
     // Collision checking on this velocity heading
     if (isCollisionImminent(pose, linear_vel, angular_vel)) {
-      throw nav2_core::PlannerException("RegulatedPurePursuitController detected collision ahead!");
+      throw nav2_core::PlannerException("PurePursuitController detected collision ahead!");
     }
 
     // Create TwistStamped message with the desired velocity
@@ -146,7 +146,7 @@ geometry_msgs::msg::TwistStamped RegulatedPurePursuitController::computeVelocity
     return cmd_vel;
 }
 
-bool RegulatedPurePursuitController::isCollisionImminent(
+bool PurePursuitController::isCollisionImminent(
   const geometry_msgs::msg::PoseStamped & robot_pose,
   const double & linear_vel, const double & angular_vel)
 {
@@ -188,7 +188,7 @@ bool RegulatedPurePursuitController::isCollisionImminent(
   return false;
 }
 
-bool RegulatedPurePursuitController::inCollision(const double & x, const double & y)
+bool PurePursuitController::inCollision(const double & x, const double & y)
 {
   unsigned int mx, my;
 
@@ -210,12 +210,12 @@ bool RegulatedPurePursuitController::inCollision(const double & x, const double 
   }
 }
 
-void RegulatedPurePursuitController::setPlan(const nav_msgs::msg::Path & path)
+void PurePursuitController::setPlan(const nav_msgs::msg::Path & path)
 {
   global_plan_ = path;
 }
 
-void RegulatedPurePursuitController::setSpeedLimit(
+void PurePursuitController::setSpeedLimit(
   const double & speed_limit,
   const bool & percentage)
 {
@@ -233,7 +233,7 @@ void RegulatedPurePursuitController::setSpeedLimit(
   }
 }
 
-nav_msgs::msg::Path RegulatedPurePursuitController::transformGlobalPlan(
+nav_msgs::msg::Path PurePursuitController::transformGlobalPlan(
   const geometry_msgs::msg::PoseStamped & pose)
 {
   if (global_plan_.poses.empty()) {
@@ -297,7 +297,7 @@ nav_msgs::msg::Path RegulatedPurePursuitController::transformGlobalPlan(
   return transformed_plan;
 }
 
-bool RegulatedPurePursuitController::transformPose(
+bool PurePursuitController::transformPose(
   const std::string frame,
   const geometry_msgs::msg::PoseStamped & in_pose,
   geometry_msgs::msg::PoseStamped & out_pose) const
@@ -316,9 +316,9 @@ bool RegulatedPurePursuitController::transformPose(
   }
   return false;
 }
-}  // namespace custom_regulated_pure_pursuit_controller
+}  // namespace custom_pure_pursuit_controller
 
 // Register this controller as a nav2_core plugin
 PLUGINLIB_EXPORT_CLASS(
-  custom_regulated_pure_pursuit_controller::RegulatedPurePursuitController,
+  custom_pure_pursuit_controller::PurePursuitController,
   nav2_core::Controller)

@@ -1,0 +1,9 @@
+<class_libraries>
+    <library path="custom_pure_pursuit_controller">
+        <class type="custom_pure_pursuit_controller::PurePursuitController" base_class_type="nav2_core::Controller">
+            <description>
+                pure_pursuit_controller
+            </description>
+        </class>
+    </library>
+</class_libraries>

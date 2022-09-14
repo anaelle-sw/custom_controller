@@ -1,5 +1,5 @@
 # Custom controller
-A custom controller for nav2 and turtlebot3, based on nav2's regulated pure pursuit controller
+A custom controller for nav2 and turtlebot3, based on nav2's pure pursuit controller
 
 ## Prequisites
 * Install [ROS2 Galatic](https://docs.ros.org/en/galactic/Installation/Ubuntu-Install-Debians.html)
