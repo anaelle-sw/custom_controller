@@ -22,7 +22,7 @@ set(CMAKE_CXX_STANDARD 17)
 include_directories(
   include
 )
-
+set(library_name pure_pursuit_controller)
 set(dependencies
     rclcpp
     rclcpp_lifecycle
@@ -76,13 +76,13 @@ install(DIRECTORY include/
   DESTINATION include/
 )
 
-#if(BUILD_TESTING)
-#  find_package(ament_lint_auto REQUIRED)
-#  # the following line skips the linter which checks for copyrights
-#  set(ament_cmake_copyright_FOUND TRUE)
-#  ament_lint_auto_find_test_dependencies()
-#  add_subdirectory(test)
-#endif()
+if(BUILD_TESTING)
+  find_package(ament_lint_auto REQUIRED)
+  # the following line skips the linter which checks for copyrights
+  set(ament_cmake_copyright_FOUND FALSE)
+  ament_lint_auto_find_test_dependencies()
+  add_subdirectory(test)
+endif()
 
 ament_export_include_directories(include)
 ament_export_libraries(pure_pursuit_controller progress_checker)
