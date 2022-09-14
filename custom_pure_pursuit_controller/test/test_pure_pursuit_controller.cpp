@@ -8,8 +8,9 @@
 #include "rclcpp/rclcpp.hpp"
 #include "nav2_costmap_2d/costmap_2d.hpp"
 #include "nav2_util/lifecycle_node.hpp"
-#include "custom_pure_pursuit_controller/pure_pursuit_controller.hpp"
 #include "nav2_costmap_2d/costmap_filters/filter_values.hpp"
+
+#include "custom_pure_pursuit_controller/pure_pursuit_controller.hpp"
 
 class RclCppFixture
 {
@@ -37,7 +38,7 @@ TEST(PurePursuitControllerTest, basicAPI)
   auto tf = std::make_shared<tf2_ros::Buffer>(node->get_clock());
   auto costmap = std::make_shared<nav2_costmap_2d::Costmap2DROS>("fake_costmap");
 
-  // instantiate
+  // Instantiate
   auto ctrl = std::make_shared<BasicAPIPurePursuitController>();
   ctrl->configure(node, name, tf, costmap);
   ctrl->activate();
@@ -52,7 +53,7 @@ TEST(PurePursuitControllerTest, basicAPI)
   EXPECT_EQ(ctrl->getPlan().poses.size(), 2ul);
   EXPECT_EQ(ctrl->getPlan().poses[0].header.frame_id, std::string("fake_frame"));
 
-  // set speed limit
+  // Set speed limit
   const double base_speed = ctrl->getSpeed();
   EXPECT_EQ(ctrl->getSpeed(), base_speed);
   ctrl->setSpeedLimit(0.51, false);

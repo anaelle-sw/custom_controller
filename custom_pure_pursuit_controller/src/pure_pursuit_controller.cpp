@@ -1,43 +1,47 @@
 #include <algorithm>
-#include <string>
 #include <limits>
 #include <memory>
+#include <string>
 #include <utility>
 
-#include "custom_pure_pursuit_controller/pure_pursuit_controller.hpp"
 #include "nav2_core/exceptions.hpp"
-#include "nav2_util/node_utils.hpp"
-#include "nav2_util/geometry_utils.hpp"
 #include "nav2_costmap_2d/costmap_filters/filter_values.hpp"
+#include "nav2_util/geometry_utils.hpp"
+#include "nav2_util/node_utils.hpp"
 
-using std::hypot;
-using std::min;
-using std::max;
-using std::abs;
+#include "custom_pure_pursuit_controller/pure_pursuit_controller.hpp"
+
 using nav2_util::declare_parameter_if_not_declared;
 using nav2_util::geometry_utils::euclidean_distance;
-using namespace nav2_costmap_2d;  // NOLINT
+using std::abs;
+using std::hypot;
+using std::max;
+using std::min;
+using namespace nav2_costmap_2d; //NOLINT
 
 namespace custom_pure_pursuit_controller
 {
 
 void PurePursuitController::configure(
   const rclcpp_lifecycle::LifecycleNode::WeakPtr & parent,
-  std::string name, const std::shared_ptr<tf2_ros::Buffer> & tf,
+  std::string name,
+  const std::shared_ptr<tf2_ros::Buffer> & tf,
   const std::shared_ptr<nav2_costmap_2d::Costmap2DROS> & costmap_ros)
 {
-  auto node = parent.lock();
-  if (!node) {
-    throw nav2_core::PlannerException("Unable to lock node!");
-  }
-
   costmap_ros_ = costmap_ros;
   costmap_ = costmap_ros_->getCostmap();
   tf_ = tf;
   plugin_name_ = name;
+
+  // Get parent node
+  auto node = parent.lock();
+  if (!node) {
+    throw nav2_core::PlannerException("Unable to lock node!");
+  }
   logger_ = node->get_logger();
   clock_ = node->get_clock();
 
+  // Declare and get parameters
   double transform_tolerance = 0.1;
 
   declare_parameter_if_not_declared(
@@ -50,19 +54,19 @@ void PurePursuitController::configure(
     node, plugin_name_ + ".transform_tolerance", rclcpp::ParameterValue(0.1));
   declare_parameter_if_not_declared(
     node, plugin_name_ + ".max_angular_vel", rclcpp::ParameterValue(1.0));
-
   node->get_parameter(plugin_name_ + ".desired_linear_vel", desired_linear_vel_);
-  base_desired_linear_vel_ = desired_linear_vel_;
   node->get_parameter(plugin_name_ + ".lookahead_dist", lookahead_dist_);
   node->get_parameter(
-    plugin_name_ + ".max_allowed_time_to_collision",
-    max_allowed_time_to_collision_);
+    plugin_name_ + ".max_allowed_time_to_collision", max_allowed_time_to_collision_);
   node->get_parameter(plugin_name_ + ".transform_tolerance", transform_tolerance);
   node->get_parameter(plugin_name_ + ".max_angular_vel", max_angular_vel_);
 
+  base_desired_linear_vel_ = desired_linear_vel_;
   transform_tolerance_ = tf2::durationFromSec(transform_tolerance);
 
-  global_path_pub_ = node->create_publisher<nav_msgs::msg::Path>("received_global_plan", 1);
+  // Initialize publisher
+  global_path_pub_ =
+    node->create_publisher<nav_msgs::msg::Path>("received_global_plan", 1);
 }
 
 void PurePursuitController::cleanup()
@@ -102,53 +106,56 @@ geometry_msgs::msg::TwistStamped PurePursuitController::computeVelocityCommands(
 {
   // Transform path to robot base frame
   auto transformed_plan = transformGlobalPlan(pose);
-  // Find the first pose which is at a distance greater than the specified lookahed distance
-    auto goal_pose_it = std::find_if(
-          transformed_plan.poses.begin(), transformed_plan.poses.end(), [&](const auto & ps) {
+
+  // Find the first pose which is at a distance greater than the specified
+  // lookahed distance
+  auto goal_pose_it = std::find_if(
+    transformed_plan.poses.begin(), transformed_plan.poses.end(),
+    [&](const auto & ps) {
       return hypot(ps.pose.position.x, ps.pose.position.y) >= lookahead_dist_;
     });
 
-    // If the last pose is still within lookahed distance, take the last pose
-    if (goal_pose_it == transformed_plan.poses.end()) {
-      goal_pose_it = std::prev(transformed_plan.poses.end());
-    }
-    auto goal_pose = goal_pose_it->pose;
+  // If the last pose is still within lookahed distance, take the last pose
+  if (goal_pose_it == transformed_plan.poses.end()) {
+    goal_pose_it = std::prev(transformed_plan.poses.end());
+  }
+  auto goal_pose = goal_pose_it->pose;
 
-    double linear_vel, angular_vel;
+  double linear_vel, angular_vel;
 
-    // If the goal pose is in front of the robot then compute the velocity using the pure pursuit
-    // algorithm, else rotate with the max angular velocity until the goal pose is in front of the
-    // robot
-    if (goal_pose.position.x > 0) {
-      auto curvature = 2.0 * goal_pose.position.y /
-          (goal_pose.position.x * goal_pose.position.x + goal_pose.position.y * goal_pose.position.y);
-      linear_vel = desired_linear_vel_;
-      angular_vel = desired_linear_vel_ * curvature;
-    } else {
-      linear_vel = 0.0;
-      angular_vel = max_angular_vel_;
-    }
+  // If the goal pose is in front of the robot then compute the velocity using
+  // the pure pursuit algorithm, else rotate with the max angular velocity until
+  // the goal pose is in front of the robot
+  if (goal_pose.position.x > 0) {
+    auto curvature = 2.0 * goal_pose.position.y /
+      (goal_pose.position.x * goal_pose.position.x +
+      goal_pose.position.y * goal_pose.position.y);
+    linear_vel = desired_linear_vel_;
+    angular_vel = desired_linear_vel_ * curvature;
+  } else {
+    linear_vel = 0.0;
+    angular_vel = max_angular_vel_;
+  }
 
-    // Collision checking on this velocity heading
-    if (isCollisionImminent(pose, linear_vel, angular_vel)) {
-      throw nav2_core::PlannerException("PurePursuitController detected collision ahead!");
-    }
+  // Collision checking on this velocity heading
+  if (isCollisionImminent(pose, linear_vel, angular_vel)) {
+    throw nav2_core::PlannerException("PurePursuitController detected collision ahead!");
+  }
 
-    // Create TwistStamped message with the desired velocity
-    geometry_msgs::msg::TwistStamped cmd_vel;
-    cmd_vel.header.frame_id = pose.header.frame_id;
-    cmd_vel.header.stamp = clock_->now();
-    cmd_vel.twist.linear.x = linear_vel;
-    cmd_vel.twist.angular.z = max(
-          -1.0 * abs(max_angular_vel_), min(
-            angular_vel, abs(
-              max_angular_vel_)));
-    return cmd_vel;
+  // Create TwistStamped message with the desired velocity
+  geometry_msgs::msg::TwistStamped cmd_vel;
+  cmd_vel.header.frame_id = pose.header.frame_id;
+  cmd_vel.header.stamp = clock_->now();
+  cmd_vel.twist.linear.x = linear_vel;
+  cmd_vel.twist.angular.z =
+    max(-1.0 * abs(max_angular_vel_), min(angular_vel, abs(max_angular_vel_)));
+  return cmd_vel;
 }
 
 bool PurePursuitController::isCollisionImminent(
   const geometry_msgs::msg::PoseStamped & robot_pose,
-  const double & linear_vel, const double & angular_vel)
+  const double & linear_vel,
+  const double & angular_vel)
 {
   // Note(stevemacenski): This may be a bit unusual, but the robot_pose is in
   // odom frame and the carrot_pose is in robot base frame.
@@ -194,9 +201,12 @@ bool PurePursuitController::inCollision(const double & x, const double & y)
 
   if (!costmap_->worldToMap(x, y, mx, my)) {
     RCLCPP_WARN_THROTTLE(
-      logger_, *(clock_), 30000,
+      logger_,
+      *(clock_),
+      30000,
       "The dimensions of the costmap is too small to successfully check for "
-      "collisions as far ahead as requested. Proceed at your own risk, slow the robot, or "
+      "collisions as far ahead as requested. Proceed at your own risk, slow "
+      "the robot, or "
       "increase your costmap size.");
     return false;
   }
@@ -248,22 +258,25 @@ nav_msgs::msg::Path PurePursuitController::transformGlobalPlan(
 
   // We'll discard points on the plan that are outside the local costmap
   nav2_costmap_2d::Costmap2D * costmap = costmap_ros_->getCostmap();
-  const double max_costmap_dim = std::max(costmap->getSizeInCellsX(), costmap->getSizeInCellsY());
-  const double max_transform_dist = max_costmap_dim * costmap->getResolution() / 2.0;
+  const double max_costmap_dim =
+    std::max(costmap->getSizeInCellsX(), costmap->getSizeInCellsY());
+  const double max_transform_dist =
+    max_costmap_dim * costmap->getResolution() / 2.0;
 
   // First find the closest pose on the path to the robot
-  auto transformation_begin =
-    nav2_util::geometry_utils::min_by(
+  auto transformation_begin = nav2_util::geometry_utils::min_by(
     global_plan_.poses.begin(), global_plan_.poses.end(),
     [&robot_pose](const geometry_msgs::msg::PoseStamped & ps) {
       return euclidean_distance(robot_pose, ps);
     });
 
   // Find points definitely outside of the costmap so we won't transform them.
-  auto transformation_end = std::find_if(
+  auto transformation_end =
+    std::find_if(
     transformation_begin, end(global_plan_.poses),
     [&](const auto & global_plan_pose) {
-      return euclidean_distance(robot_pose, global_plan_pose) > max_transform_dist;
+      return euclidean_distance(robot_pose, global_plan_pose) >
+      max_transform_dist;
     });
 
   // Lambda to transform a PoseStamped from global frame to local
@@ -276,7 +289,8 @@ nav_msgs::msg::Path PurePursuitController::transformGlobalPlan(
       return transformed_pose;
     };
 
-  // Transform the near part of the global plan into the robot's frame of reference.
+  // Transform the near part of the global plan into the robot's frame of
+  // reference.
   nav_msgs::msg::Path transformed_plan;
   std::transform(
     transformation_begin, transformation_end,

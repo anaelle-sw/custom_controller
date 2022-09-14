@@ -1,7 +1,7 @@
-#include "custom_pure_pursuit_controller/plugins/progress_checker.hpp"
 #include <cmath>
 #include <string>
 #include <memory>
+
 #include "nav2_core/exceptions.hpp"
 #include "nav_2d_utils/conversions.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
@@ -9,6 +9,8 @@
 #include "nav2_util/node_utils.hpp"
 #include "nav_msgs/msg/path.hpp"
 #include "pluginlib/class_list_macros.hpp"
+
+#include "custom_pure_pursuit_controller/plugins/progress_checker.hpp"
 
 using rcl_interfaces::msg::ParameterType;
 using std::placeholders::_1;
@@ -22,64 +24,52 @@ void ProgressChecker::initialize(
   const std::string & plugin_name)
 {
   plugin_name_ = plugin_name;
+
+  // Get parent node
   auto node = parent.lock();
-
   logger_ = node->get_logger();
-
   clock_ = node->get_clock();
 
+  // Declare and get parameters
   nav2_util::declare_parameter_if_not_declared(
     node, plugin_name + ".required_movement_radius", rclcpp::ParameterValue(0.5));
   nav2_util::declare_parameter_if_not_declared(
     node, plugin_name + ".movement_time_allowance", rclcpp::ParameterValue(10.0));
-  // Scale is set to 0 by default, so if it was not set otherwise, set to 0
   node->get_parameter_or(plugin_name + ".required_movement_radius", radius_, 0.5);
   double time_allowance_param = 0.0;
   node->get_parameter_or(plugin_name + ".movement_time_allowance", time_allowance_param, 10.0);
   time_allowance_ = rclcpp::Duration::from_seconds(time_allowance_param);
 
+  // Initialize publisher
   progress_status_pub_ =
-      node->create_publisher<custom_msgs::msg::ProgressStatus>(
-        "/follow_path/progress_status", rclcpp::QoS(1).transient_local());
+    node->create_publisher<custom_msgs::msg::ProgressStatus>(
+    "/follow_path/progress_status", rclcpp::QoS(1).transient_local());
   progress_status_pub_->on_activate();
   progress_status_.status = custom_msgs::msg::ProgressStatus::UNKNOWNED;
 
+  // Initialize subscription
   plan_sub_ = node->create_subscription<nav_msgs::msg::Path>(
-        "/plan", 1, std::bind(&ProgressChecker::plan_callback, this, _1));
- }
+    "/plan", 1, std::bind(&ProgressChecker::plan_callback, this, _1));
+}
 
 bool ProgressChecker::check(geometry_msgs::msg::PoseStamped & current_pose)
 {
-  // relies on short circuit evaluation to not call is_robot_moved_enough if
+  // Relies on short circuit evaluation to not call is_robot_moved_enough if
   // baseline_pose is not set.
   geometry_msgs::msg::Pose2D current_pose2d;
   current_pose2d = nav_2d_utils::poseToPose2D(current_pose.pose);
-
   if ((!baseline_pose_set_) || (is_robot_moved_enough(current_pose2d))) {
     reset_baseline_pose(current_pose2d);
-
-    // Publish progress status on change only (transient local topic)
-    if (progress_status_.status != custom_msgs::msg::ProgressStatus::ROBOT_PROGRESSING) {
-      progress_status_.status = custom_msgs::msg::ProgressStatus::ROBOT_PROGRESSING;
-      progress_status_pub_->publish(progress_status_);
-    }
+    pub_progress_status_on_change(custom_msgs::msg::ProgressStatus::ROBOT_PROGRESSING);
     return true;
   }
 
   if (!((clock_->now() - baseline_time_) > time_allowance_)) {
-    // Publish progress status on change only (transient local topic)
-    if (progress_status_.status !=  custom_msgs::msg::ProgressStatus::ROBOT_PROGRESSING) {
-      progress_status_.status = custom_msgs::msg::ProgressStatus::ROBOT_PROGRESSING;
-      progress_status_pub_->publish(progress_status_);
-    }
+    pub_progress_status_on_change(custom_msgs::msg::ProgressStatus::ROBOT_PROGRESSING);
     return true;
   }
 
-  // Publish progress status on change only (transient local topic)
-  if (progress_status_.status != custom_msgs::msg::ProgressStatus::ROBOT_STUCK) {
-    progress_status_.status = custom_msgs::msg::ProgressStatus::ROBOT_STUCK;
-    progress_status_pub_->publish(progress_status_);
-  }
+  pub_progress_status_on_change(custom_msgs::msg::ProgressStatus::ROBOT_STUCK);
   return false;
 }
 
@@ -95,11 +85,20 @@ void ProgressChecker::reset_baseline_pose(const geometry_msgs::msg::Pose2D & pos
   baseline_pose_set_ = true;
 }
 
+void ProgressChecker::pub_progress_status_on_change(const uint8_t progress_status)
+{
+  // Publish progress status on change only (transient local topic)
+  if (progress_status_.status != progress_status) {
+    progress_status_.status = progress_status;
+    progress_status_pub_->publish(progress_status_);
+  }
+}
+
 void ProgressChecker::plan_callback(const nav_msgs::msg::Path::SharedPtr /*path_msg*/)
 {
+  // Always publish progress status when receiving a new path
   progress_status_.status = custom_msgs::msg::ProgressStatus::FOLLOWING_NEW_PATH;
   progress_status_pub_->publish(progress_status_);
-  return;
 }
 
 bool ProgressChecker::is_robot_moved_enough(const geometry_msgs::msg::Pose2D & pose)

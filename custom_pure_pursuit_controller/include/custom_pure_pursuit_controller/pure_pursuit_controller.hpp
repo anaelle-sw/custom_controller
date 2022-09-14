@@ -19,7 +19,7 @@ namespace custom_pure_pursuit_controller
 
 /**
  * @class custom_pure_pursuit_controller::PurePursuitController
- * @brief Pure pursuit controller plugin
+ * @brief Pure pursuit controller plugin with collison detection
  */
 class PurePursuitController : public nav2_core::Controller
 {
@@ -42,10 +42,10 @@ public:
    * @param costmap_ros Costmap2DROS object of environment
    */
   void configure(
-      const rclcpp_lifecycle::LifecycleNode::WeakPtr & parent,
-      std::string name,
-      const std::shared_ptr<tf2_ros::Buffer> & tf,
-      const std::shared_ptr<nav2_costmap_2d::Costmap2DROS> & costmap_ros) override;
+    const rclcpp_lifecycle::LifecycleNode::WeakPtr & parent,
+    std::string name,
+    const std::shared_ptr<tf2_ros::Buffer> & tf,
+    const std::shared_ptr<nav2_costmap_2d::Costmap2DROS> & costmap_ros) override;
 
   /**
    * @brief Cleanup controller state machine
@@ -63,7 +63,8 @@ public:
   void deactivate() override;
 
   /**
-   * @brief Compute the best command given the current pose and velocity, with possible debug information
+   * @brief Compute the best command given the current pose and velocity,
+   * with possible debug information
    *
    * Same as above computeVelocityCommands, but with debug results.
    * If the results pointer is not null, additional information about the twists
@@ -71,7 +72,7 @@ public:
    *
    * @param pose      Current robot pose
    * @param velocity  Current robot velocity
-   * @param goal_checker   Ptr to the goal checker for this task in case useful in computing commands
+   * @param goal_checker  Ptr to the goal checker for this task in case useful in computing commands
    * @return          Best command
    */
   geometry_msgs::msg::TwistStamped computeVelocityCommands(
@@ -96,7 +97,8 @@ public:
 
 protected:
   /**
-   * @brief Transforms global plan into same frame as pose, clips far away poses and possibly prunes passed poses
+   * @brief Transforms global plan into same frame as pose,
+   * clips far away poses and possibly prunes passed poses
    * @param pose pose to transform
    * @return Path in new frame
    */
@@ -136,12 +138,14 @@ protected:
   bool inCollision(const double & x, const double & y);
 
 
-  std::shared_ptr<tf2_ros::Buffer> tf_;
   std::string plugin_name_;
+  rclcpp::Clock::SharedPtr clock_;
+  std::shared_ptr<tf2_ros::Buffer> tf_;
   std::shared_ptr<nav2_costmap_2d::Costmap2DROS> costmap_ros_;
   nav2_costmap_2d::Costmap2D * costmap_;
   rclcpp::Logger logger_ {rclcpp::get_logger("PurePursuitController")};
-  rclcpp::Clock::SharedPtr clock_;
+  std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Path>> global_path_pub_;
+  nav_msgs::msg::Path global_plan_;
 
   // Parameters
   double desired_linear_vel_, base_desired_linear_vel_;
@@ -149,9 +153,6 @@ protected:
   tf2::Duration transform_tolerance_;
   double max_allowed_time_to_collision_;
   double max_angular_vel_;
-
-  nav_msgs::msg::Path global_plan_;
-  std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Path>> global_path_pub_;
 };
 
 }  // namespace custom_pure_pursuit_controller
